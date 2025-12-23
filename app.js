@@ -162,14 +162,14 @@ app.get("/showROTD", async (req, res) => {
         }
 
         const apiData = await response.json();
-        console.log("API Data:", JSON.stringify(apiData, null, 2)); // Log the data for debugging
+        console.log("API Data:", JSON.stringify(apiData, null, 2)); 
 
-        // Extract the payload from the API data
+        
         const recipeOfTheDay = apiData.payload;
 
         res.render("listings/show_ROTD", { recipeOfTheDay: recipeOfTheDay });
     } catch (error) {
-        console.error("Error fetching recipe of the day:", error.message); // Log the error message
+        console.error("Error fetching recipe of the day:", error.message);
         res.status(500).send("Failed to fetch recipe of the day.");
     }
 });
@@ -278,7 +278,7 @@ app.post("/signup", wrapAsync(async (req, res) => {
 app.post("/login", saveRedirectUrl, passport.authenticate("local", { failureRedirect: "/get_started", failureFlash: true }), async (req, res) => {
     try {
         req.flash("success", "Welcome back to WellBite");
-        res.redirect(res.locals.redirectUrl);  // Corrected to res.locals
+        res.redirect(res.locals.redirectUrl);  
     } catch (e) {
         req.flash("error", e.message);
         res.redirect("/get_started");
@@ -371,20 +371,19 @@ app.post("/:productId/deleteFromCart", isLoggedIn, saveRedirectUrl, wrapAsync(as
         const productId = req.params.productId;
         const userId = req.user._id;
 
-        // Find the user's cart
+        
         const user = await User.findById(userId).populate('cart');
         const cart = user.cart;
 
-        // Find the cart item corresponding to the product to be deleted
+        
         const cartItem = await CartItem.findOneAndDelete({ product: productId, user: userId });
 
-        // Remove the cart item reference from the cart
+        
         cart.items.pull(cartItem._id);
 
-        // Update the total price of the cart
         cart.totalPrice = cart.totalPrice - (cartItem.price * cartItem.quantity);
 
-        // Save the changes
+      
         await cart.save();
 
         req.flash('success', 'Product removed from cart');
@@ -417,12 +416,12 @@ async function findIngredientBasedRecommendation(cartItems) {
         listing.ingredients.forEach(ingredient => orderIngredients.add(ingredient));
     }
 
-    // Fetch all listings excluding the items already in the order
+    
     const allListings = await Listing.find({
         _id: { $nin: Array.from(orderedItemIds) }
     });
 
-    // Find the listing with the most shared ingredients
+
     for (let listing of allListings) {
         const sharedIngredientsCount = listing.ingredients.filter(ingredient => orderIngredients.has(ingredient)).length;
 
@@ -453,10 +452,10 @@ async function findProteinRecommendation(cartItems) {
 
     // Fetch all listings excluding those in the cart
     const allListings = await Listing.find({
-        _id: { $nin: cartItems.map(item => item.product) }  // Exclude ordered items
+        _id: { $nin: cartItems.map(item => item.product) } 
     });
 
-    // Find the listing with the closest protein content
+    
     for (let listing of allListings) {
         const proteinDifference = Math.abs(listing.protein - avgProtein);
 
@@ -476,7 +475,7 @@ async function findCalorieRecommendation(cartItems) {
     let calorieRecommendation = null;
     let closestCalorieDifference = Infinity;
 
-    // Check if there are items in the cart
+    
     if (cartItems.length === 0) {
         return null; // No items in the cart, no recommendations
     }
@@ -485,28 +484,27 @@ async function findCalorieRecommendation(cartItems) {
     let totalCalories = 0;
     for (let item of cartItems) {
         const listing = await Listing.findById(item.product);
-        if (listing && listing.calorie !== undefined) { // Ensure calorie field exists
-            totalCalories += listing.calorie; // Use 'calorie' instead of 'calories'
+        if (listing && listing.calorie !== undefined) { 
+            totalCalories += listing.calorie; 
         }
     }
 
     const avgCalories = totalCalories / cartItems.length;
 
-    // Debugging output
+   
     console.log(`Total Calories: ${totalCalories}`);
     console.log(`Average Calories: ${avgCalories}`);
 
-    // Fetch all listings excluding those in the cart
     const allListings = await Listing.find({
-        _id: { $nin: cartItems.map(item => item.product) }  // Exclude ordered items
+        _id: { $nin: cartItems.map(item => item.product) }  
     });
 
-    // Find the listing with the closest calorie content
+    
     for (let listing of allListings) {
-        if (listing.calorie !== undefined) { // Ensure calorie field exists
-            const calorieDifference = Math.abs(listing.calorie - avgCalories); // Use 'calorie' instead of 'calories'
+        if (listing.calorie !== undefined) { 
+            const calorieDifference = Math.abs(listing.calorie - avgCalories); 
 
-            // Recommend the product with the closest calorie content to the average
+            // Recommend the product with the closest calorie
             if (calorieDifference < closestCalorieDifference) {
                 closestCalorieDifference = calorieDifference;
                 calorieRecommendation = listing;
@@ -528,21 +526,21 @@ async function findFatRecommendation(cartItems) {
     for (let item of cartItems) {
         const listing = await Listing.findById(item.product);
         if (listing) {
-            totalFat += listing.fat; // Assuming 'fat' is a field in your Listing model
+            totalFat += listing.fat; 
         }
     }
     const avgFat = totalFat / cartItems.length;
 
-    // Fetch all listings excluding those in the cart
+    
     const allListings = await Listing.find({
-        _id: { $nin: cartItems.map(item => item.product) }  // Exclude ordered items
+        _id: { $nin: cartItems.map(item => item.product) } 
     });
 
     // Find the listing with the closest fat content
     for (let listing of allListings) {
         const fatDifference = Math.abs(listing.fat - avgFat);
 
-        // Recommend the product with the closest fat content to the average
+        // Recommend the product with the closest fat
         if (fatDifference < closestFatDifference) {
             closestFatDifference = fatDifference;
             fatRecommendation = listing;
@@ -565,16 +563,15 @@ async function findTasteProfileBasedRecommendation(cartItems) {
         }
     }
 
-    // Fetch all listings excluding the items in the order
+    
     const allListings = await Listing.find({
-        _id: { $nin: cartItems.map(item => item.product) }  // Exclude items already ordered
+        _id: { $nin: cartItems.map(item => item.product) } 
     });
 
-    // Find listings with matching taste profiles
     for (let listing of allListings) {
         if (orderTasteProfiles.has(listing.tasteProfile)) {
             recommendedItem = listing;
-            break; // Recommend the first matching taste profile found
+            break; 
         }
     }
 
@@ -588,7 +585,6 @@ app.get("/placeOrder", isLoggedIn, saveRedirectUrl, async (req, res) => {
         const userOrders = await Order.find({ user: req.user._id });
         const hasOrders = userOrders.length > 0;
 
-        // Fetch user's cart
         const cart = await Cart.findOne({ user: req.user._id }).populate("items");
 
         if (cart && cart.items.length > 0) {
@@ -605,10 +601,10 @@ app.get("/placeOrder", isLoggedIn, saveRedirectUrl, async (req, res) => {
 
             await order.save();
 
-            // Find a recommended item based on shared ingredients
+            
             const ingredientRecommendation = await findIngredientBasedRecommendation(cart.items);
 
-            // Save ingredient-based recommendation if it's not already recommended
+            
             if (ingredientRecommendation) {
                 const existingIngredientRecommendation = await Recommendation.findOne({
                     user: req.user._id,
@@ -630,7 +626,6 @@ app.get("/placeOrder", isLoggedIn, saveRedirectUrl, async (req, res) => {
             // Find a recommended item based on protein content
             const proteinRecommendation = await findProteinRecommendation(cart.items);
 
-            // Save protein-based recommendation if it's not already recommended
             if (proteinRecommendation) {
                 const existingProteinRecommendation = await Recommendation.findOne({
                     user: req.user._id,
@@ -765,3 +760,4 @@ app.use((err, req, res, next) => {
 app.listen(8080, () => {
     console.log("Server is listening on port 8080");
 });
+
